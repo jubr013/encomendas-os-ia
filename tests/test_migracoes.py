@@ -23,7 +23,8 @@ def conexao_isolada():
     with banco.conectar(direta=True) as conexao:
         conexao.autocommit = True
         conexao.execute(f"CREATE SCHEMA {esquema}")
-        conexao.execute(f"SET search_path TO {esquema}, public")
+        # Sem public no caminho: nenhuma consulta do teste alcança as tabelas reais.
+        conexao.execute(f"SET search_path TO {esquema}")
         yield conexao
         conexao.execute(f"DROP SCHEMA {esquema} CASCADE")
 
@@ -231,11 +232,34 @@ def test_apagar_documento_apaga_seus_trechos_e_preserva_os_outros(esquema):
 
 @sem_banco
 def test_pgvector_encontra_o_vetor_mais_proximo(esquema):
-    esquema.execute("CREATE TEMP TABLE vetores (nome text, vetor vector(3))")
+    # A extensão vale para o banco inteiro e fica em public, por isso os nomes qualificados.
+    esquema.execute("CREATE TEMP TABLE vetores (nome text, vetor public.vector(3))")
     esquema.execute("INSERT INTO vetores VALUES ('perto', '[1,2,3]'), ('longe', '[9,9,9]')")
 
     linha = esquema.execute(
-        "SELECT nome FROM vetores ORDER BY vetor <=> '[1,2,4]' LIMIT 1"
+        """
+        SELECT nome FROM vetores
+        ORDER BY vetor OPERATOR(public.<=>) '[1,2,4]'::public.vector
+        LIMIT 1
+        """
     ).fetchone()
 
     assert linha == ("perto",)
+
+
+@sem_banco
+def test_migracao_do_pgvector_e_registrada_e_a_extensao_existe(esquema):
+    assert nomes_registrados(esquema) == [
+        "0001_habilitar_pgvector.sql",
+        "0002_documentos_e_trechos.sql",
+    ]
+    linha = esquema.execute("SELECT count(*) FROM pg_extension WHERE extname = 'vector'").fetchone()
+    assert linha == (1,)
+
+
+@sem_banco
+def test_conexao_de_teste_nao_alcanca_o_esquema_public(conexao_isolada):
+    caminho = conexao_isolada.execute("SHOW search_path").fetchone()[0]
+    assert "public" not in caminho
+    with pytest.raises(psycopg.errors.UndefinedTable):
+        conexao_isolada.execute("SELECT 1 FROM migracoes_aplicadas")
