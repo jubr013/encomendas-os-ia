@@ -1,0 +1,28 @@
+# Segredos
+.env
+.env.*
+!.env.example
+
+# Documento mantido apenas localmente
+docs/01-analise-de-mercado-e-comparativo.md
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Node
+node_modules/
+dist/
+
+# Sistema e editores
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
