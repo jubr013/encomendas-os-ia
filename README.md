@@ -25,6 +25,7 @@ Projeto de portfólio de AI Engineering: transformar conversas de WhatsApp de pe
 - [Plano de acordo com a ementa](docs/02-plano-pela-ementa.md)
 - [Provedores e ambiente](docs/03-provedores-e-ambiente.md)
 - [Gestão do projeto](docs/04-gestao-do-projeto.md)
+- [Dados fictícios](data/confeitaria_ficticia/README.md)
 
 ## Como rodar
 
