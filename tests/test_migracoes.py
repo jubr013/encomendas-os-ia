@@ -104,3 +104,109 @@ def test_falha_desfaz_a_migracao_e_interrompe_as_seguintes(conexao_isolada, tmp_
     assert not tabela_existe(conexao_isolada, "parcial")
     assert not tabela_existe(conexao_isolada, "depois")
     assert nomes_registrados(conexao_isolada) == ["0001_boa.sql"]
+
+
+@pytest.fixture
+def esquema(conexao_isolada):
+    migracoes.aplicar_migracoes(conexao_isolada)
+    return conexao_isolada
+
+
+def criar_documento(conexao, origem="cardapio.md", hash_="abc"):
+    return conexao.execute(
+        """
+        INSERT INTO documentos (origem, titulo, conteudo, hash)
+        VALUES (%s, 'Título', 'Conteúdo', %s) RETURNING id
+        """,
+        (origem, hash_),
+    ).fetchone()[0]
+
+
+def criar_trecho(conexao, documento_id, ordem=0):
+    conexao.execute(
+        "INSERT INTO trechos (documento_id, ordem, conteudo) VALUES (%s, %s, 'Trecho')",
+        (documento_id, ordem),
+    )
+
+
+@sem_banco
+@pytest.mark.parametrize(
+    ("tabela", "colunas"),
+    [
+        ("migracoes_aplicadas", {"nome", "aplicada_em"}),
+        ("documentos", {"id", "origem", "titulo", "conteudo", "hash", "criado_em"}),
+        ("trechos", {"id", "documento_id", "ordem", "conteudo"}),
+    ],
+)
+def test_tabela_tem_exatamente_as_colunas_aprovadas(esquema, tabela, colunas):
+    linhas = esquema.execute(
+        """
+        SELECT column_name FROM information_schema.columns
+        WHERE table_schema = current_schema() AND table_name = %s
+        """,
+        (tabela,),
+    ).fetchall()
+    assert {linha[0] for linha in linhas} == colunas
+
+
+@sem_banco
+def test_esquema_tem_somente_as_tabelas_aprovadas(esquema):
+    linhas = esquema.execute(
+        "SELECT table_name FROM information_schema.tables WHERE table_schema = current_schema()"
+    ).fetchall()
+    assert {linha[0] for linha in linhas} == {"migracoes_aplicadas", "documentos", "trechos"}
+
+
+@sem_banco
+def test_documento_repetido_na_mesma_origem_e_rejeitado(esquema):
+    criar_documento(esquema)
+    with pytest.raises(psycopg.errors.UniqueViolation):
+        criar_documento(esquema)
+
+
+@sem_banco
+@pytest.mark.parametrize(
+    ("origem", "hash_"), [("outra.md", "abc"), ("cardapio.md", "outro")]
+)
+def test_documento_diferente_em_origem_ou_hash_e_aceito(esquema, origem, hash_):
+    primeiro = criar_documento(esquema)
+    assert criar_documento(esquema, origem, hash_) != primeiro
+
+
+@sem_banco
+def test_trecho_de_documento_inexistente_e_rejeitado(esquema):
+    with pytest.raises(psycopg.errors.ForeignKeyViolation):
+        criar_trecho(esquema, 999_999)
+
+
+@sem_banco
+def test_trecho_com_ordem_repetida_no_documento_e_rejeitado(esquema):
+    documento_id = criar_documento(esquema)
+    criar_trecho(esquema, documento_id)
+    with pytest.raises(psycopg.errors.UniqueViolation):
+        criar_trecho(esquema, documento_id)
+
+
+@sem_banco
+def test_apagar_documento_apaga_seus_trechos_e_preserva_os_outros(esquema):
+    apagado = criar_documento(esquema)
+    mantido = criar_documento(esquema, "outra.md")
+    criar_trecho(esquema, apagado)
+    criar_trecho(esquema, mantido)
+
+    esquema.execute("DELETE FROM documentos WHERE id = %s", (apagado,))
+
+    linhas = esquema.execute("SELECT documento_id FROM trechos").fetchall()
+    assert linhas == [(mantido,)]
+
+
+@sem_banco
+def test_pgvector_encontra_o_vetor_mais_proximo(esquema):
+    esquema.execute("CREATE TEMP TABLE vetores (nome text, vetor vector(3))")
+    esquema.execute("INSERT INTO vetores VALUES ('perto', '[1,2,3]'), ('longe', '[9,9,9]')")
+
+    linha = esquema.execute(
+        "SELECT nome FROM vetores ORDER BY vetor <=> '[1,2,4]' LIMIT 1"
+    ).fetchone()
+
+    assert linha == ("perto",)
