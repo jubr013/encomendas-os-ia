@@ -2,7 +2,7 @@
 
 Projeto de portfólio de AI Engineering: transformar conversas de WhatsApp de pequenos negócios que vendem por encomenda em pedidos e orçamentos estruturados, sempre com confirmação humana.
 
-> **Status:** em planejamento. Ainda não há código executável. Todos os dados do projeto são fictícios.
+> **Status:** em construção. Por enquanto há apenas o ambiente Python e testes básicos. Todos os dados do projeto são fictícios.
 
 ## Objetivos de aprendizado
 
@@ -28,4 +28,19 @@ Projeto de portfólio de AI Engineering: transformar conversas de WhatsApp de pe
 
 ## Como rodar
 
-As instruções serão adicionadas quando houver código para executar.
+Requer Python 3.12 ou superior. Os comandos abaixo são para PowerShell, no Windows.
+
+O ambiente virtual fica fora da pasta do projeto para não ser sincronizado, caso ela esteja no OneDrive ou em serviço parecido.
+
+```powershell
+py -3.12 -m venv "$env:USERPROFILE\.venvs\encomendas-os-ia"
+& "$env:USERPROFILE\.venvs\encomendas-os-ia\Scripts\Activate.ps1"
+python -m pip install -e ".[dev]"
+```
+
+Para verificar:
+
+```powershell
+pytest
+ruff check .
+```

@@ -9,6 +9,8 @@ docs/01-analise-de-mercado-e-comparativo.md
 # Python
 __pycache__/
 *.py[cod]
+*.egg-info/
+build/
 .venv/
 .pytest_cache/
 .ruff_cache/
