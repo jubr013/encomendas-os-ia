@@ -257,3 +257,15 @@ Não alterei `spec.md`.
 **O que funciona:** conexão, executor, transação, autocommit, leitura com falha, `python -m`, esquema, tipos, restrições e isolamento dos testes.
 
 **Próximos passos:** Julia decide sobre as melhorias opcionais e a suposição de `spec.md:33`, e depois sobre commit, push e PR.
+
+## Complemento depois da segunda rodada
+
+Esta seção foi escrita pelo autor do código, não pelo verificador independente. Nenhuma nova rodada do verificador foi feita depois dela.
+
+Julia decidiu provar a migração do pgvector do zero. O teste `test_migracao_habilita_o_pgvector_em_um_banco_que_nao_o_tem` cria um banco temporário, confirma que a extensão está ausente, aplica as migrações, confirma que ela passou a existir e apaga o banco ao final.
+
+- **Mutação M2 (0001 trocada por `SELECT 1`):** agora é detectada, em cópia temporária.
+- **Verificação:** 79 testes passaram, e o `ruff` não apontou nada.
+- **Banco real:** segue com as 2 migrações, sem documentos, e sem bancos ou esquemas de teste.
+- **Suposições da spec:** confirmadas por Julia.
+- **Lacunas menores restantes:** ficam para um card próprio, por decisão de Julia.

@@ -26,11 +26,11 @@ O RAG da Sprint 2 precisa guardar documentos e trechos no PostgreSQL do Neon. O 
 | Decisão | Escolha | Motivo | Confirmada? |
 |---|---|---|---|
 | Esquema das tabelas | Campos de MIG-04 | Aprovado por Julia em 04/11/2026 | Sim |
-| Chave de `documentos` | Única em `origem` + `hash` | Mesmo conteúdo da mesma origem não se repete; a versão nova de um arquivo entra como outro documento | Não |
-| Tipo dos ids | `bigint` gerado pelo banco | Padrão simples do PostgreSQL | Não |
-| Apagar documento | Apaga seus trechos em cascata | Trecho não existe sem documento | Não |
+| Chave de `documentos` | Única em `origem` + `hash` | Mesmo conteúdo da mesma origem não se repete; a versão nova de um arquivo entra como outro documento | Sim |
+| Tipo dos ids | `bigint` gerado pelo banco | Padrão simples do PostgreSQL | Sim |
+| Apagar documento | Apaga seus trechos em cascata | Trecho não existe sem documento | Sim |
 | Isolamento dos testes | Esquema temporário removido ao final, sem `public` no `search_path` | Os testes não alcançam as tabelas reais | Não |
-| Prova da extensão | Conferir o registro da migração e a existência da extensão | O pgvector vale para o banco inteiro e já existe, então o teste não reproduz a criação dele do zero | Não |
+| Prova da extensão | Banco temporário, criado e apagado pelo teste, que começa sem a extensão | Decisão de Julia em 04/11/2026: provar a migração do zero | Sim |
 | Concorrência | Sem trava entre execuções | Projeto de uma pessoa, com execução manual | Não |
 
 **Perguntas abertas:** nenhuma.
@@ -67,7 +67,7 @@ O RAG da Sprint 2 precisa guardar documentos e trechos no PostgreSQL do Neon. O 
 3. **MIG-06:** QUANDO um trecho citar documento inexistente, ENTÃO o banco DEVE rejeitar com violação de chave estrangeira.
 4. **MIG-07:** QUANDO um trecho repetir `documento_id` e `ordem`, ENTÃO o banco DEVE rejeitar com violação de unicidade.
 5. **MIG-08:** QUANDO um documento for apagado, ENTÃO seus trechos DEVEM ser apagados.
-6. **MIG-09:** QUANDO as migrações forem aplicadas, ENTÃO o pgvector DEVE estar habilitado e uma busca por distância de cosseno (`<=>`) entre os vetores `[1,2,3]` e `[9,9,9]`, a partir de `[1,2,4]`, DEVE devolver o primeiro.
+6. **MIG-09:** QUANDO as migrações forem aplicadas em um banco sem a extensão, ENTÃO o pgvector DEVE passar de ausente a habilitado, e uma busca por distância de cosseno (`<=>`) entre os vetores `[1,2,3]` e `[9,9,9]`, a partir de `[1,2,4]`, DEVE devolver o primeiro.
 7. **MIG-11:** QUANDO as migrações forem aplicadas, ENTÃO os ids e `documento_id` DEVEM ser `bigint`, `ordem` DEVE ser `integer`, as datas DEVEM ser `timestamptz`, os demais campos DEVEM ser `text` e nenhuma coluna DEVE aceitar nulo.
 
 ### P1: Comando

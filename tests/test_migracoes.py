@@ -7,6 +7,7 @@ from uuid import uuid4
 import psycopg
 import pytest
 from dotenv import load_dotenv
+from psycopg.conninfo import make_conninfo
 
 from encomendas_os import banco, migracoes
 
@@ -370,6 +371,32 @@ def test_migracao_do_pgvector_e_registrada_e_a_extensao_existe(esquema):
     ]
     linha = esquema.execute("SELECT count(*) FROM pg_extension WHERE extname = 'vector'").fetchone()
     assert linha == (1,)
+
+
+@pytest.fixture
+def banco_vazio():
+    """Banco temporário: começa sem a extensão, o que prova a migração do zero."""
+    nome = f"teste_{uuid4().hex}"
+    url = banco.obter_url(direta=True)
+    with psycopg.connect(url, autocommit=True) as administracao:
+        administracao.execute(f"CREATE DATABASE {nome}")
+        try:
+            with psycopg.connect(make_conninfo(url, dbname=nome), autocommit=True) as conexao:
+                yield conexao
+        finally:
+            administracao.execute(f"DROP DATABASE {nome} WITH (FORCE)")
+
+
+@sem_banco
+def test_migracao_habilita_o_pgvector_em_um_banco_que_nao_o_tem(banco_vazio):
+    consulta = "SELECT count(*) FROM pg_extension WHERE extname = 'vector'"
+    assert banco_vazio.execute(consulta).fetchone() == (0,)
+
+    migracoes.aplicar_migracoes(banco_vazio)
+
+    assert banco_vazio.execute(consulta).fetchone() == (1,)
+    distancia = banco_vazio.execute("SELECT '[1,2,3]'::vector <=> '[1,2,3]'::vector").fetchone()[0]
+    assert distancia == 0
 
 
 @sem_banco

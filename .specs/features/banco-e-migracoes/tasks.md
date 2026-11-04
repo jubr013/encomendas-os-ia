@@ -79,3 +79,12 @@ T1 → T2 → T3 → T4
 - **Verificação:** build, mais nova rodada do verificador
 - **Commit:** `fix: corrige falhas de migração e fortalece testes`
 - [x] Isolamento, leitura de arquivo, autocommit e transação cobertos
+
+### F2: Prova do pgvector do zero
+
+- **Onde:** `tests/test_migracoes.py`, `spec.md`, `validation.md`
+- **Origem:** decisão de Julia, depois da segunda verificação
+- **Testes:** integração
+- **Verificação:** build, mais a mutação da migração 0001 em cópia temporária
+- **Commit:** `test: prova a migração do pgvector em banco vazio`
+- [x] O teste parte de um banco sem a extensão e o apaga ao final
