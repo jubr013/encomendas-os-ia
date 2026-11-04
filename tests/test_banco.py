@@ -1,4 +1,5 @@
 import os
+from urllib.parse import urlparse
 
 import pytest
 from dotenv import load_dotenv
@@ -36,10 +37,28 @@ def test_obter_url_sem_variavel_cita_o_nome_que_falta(ambiente_vazio, direta, no
         banco.obter_url(direta=direta)
 
 
+def test_obter_url_le_o_arquivo_env(ambiente_vazio):
+    ambiente_vazio.setattr(
+        banco,
+        "load_dotenv",
+        lambda: ambiente_vazio.setenv("DATABASE_URL_POOLED", "postgresql://do-arquivo"),
+    )
+    assert banco.obter_url() == "postgresql://do-arquivo"
+
+
+@pytest.mark.parametrize(("direta", "url"), [(True, "url-direta"), (False, "url-pooled")])
+def test_conectar_usa_a_url_pedida(ambiente_vazio, direta, url):
+    ambiente_vazio.setenv("DATABASE_URL", "url-direta")
+    ambiente_vazio.setenv("DATABASE_URL_POOLED", "url-pooled")
+    ambiente_vazio.setattr(banco.psycopg, "connect", lambda url_recebida: url_recebida)
+
+    assert banco.conectar(direta=direta) == url
+
+
 @sem_banco
 def test_so_a_url_pooled_aponta_para_o_pooler():
-    assert "-pooler" in banco.obter_url()
-    assert "-pooler" not in banco.obter_url(direta=True)
+    assert "-pooler" in urlparse(banco.obter_url()).hostname
+    assert "-pooler" not in urlparse(banco.obter_url(direta=True)).hostname
 
 
 @sem_banco

@@ -6,9 +6,9 @@ O RAG da Sprint 2 precisa guardar documentos e trechos no PostgreSQL do Neon. O 
 
 ## Objetivos
 
-- [ ] Conectar ao banco lendo as URLs do `.env`, sem expor segredos.
-- [ ] Aplicar migrações em SQL com um executor pequeno, sem Alembic.
-- [ ] Criar as tabelas `migracoes_aplicadas`, `documentos` e `trechos`, e habilitar o pgvector.
+- [x] Conectar ao banco lendo as URLs do `.env`, sem expor segredos.
+- [x] Aplicar migrações em SQL com um executor pequeno, sem Alembic.
+- [x] Criar as tabelas `migracoes_aplicadas`, `documentos` e `trechos`, e habilitar o pgvector.
 
 ## Fora de escopo
 
@@ -29,7 +29,8 @@ O RAG da Sprint 2 precisa guardar documentos e trechos no PostgreSQL do Neon. O 
 | Chave de `documentos` | Única em `origem` + `hash` | Mesmo conteúdo da mesma origem não se repete; a versão nova de um arquivo entra como outro documento | Não |
 | Tipo dos ids | `bigint` gerado pelo banco | Padrão simples do PostgreSQL | Não |
 | Apagar documento | Apaga seus trechos em cascata | Trecho não existe sem documento | Não |
-| Isolamento dos testes | Esquema temporário removido ao final | Os testes não tocam nas tabelas reais | Não |
+| Isolamento dos testes | Esquema temporário removido ao final, sem `public` no `search_path` | Os testes não alcançam as tabelas reais | Não |
+| Prova da extensão | Conferir o registro da migração e a existência da extensão | O pgvector vale para o banco inteiro e já existe, então o teste não reproduz a criação dele do zero | Não |
 | Concorrência | Sem trava entre execuções | Projeto de uma pessoa, com execução manual | Não |
 
 **Perguntas abertas:** nenhuma.
@@ -44,6 +45,7 @@ O RAG da Sprint 2 precisa guardar documentos e trechos no PostgreSQL do Neon. O 
 2. **CON-02:** QUANDO a conexão normal for pedida, ENTÃO o sistema DEVE usar `DATABASE_URL_POOLED`.
 3. **CON-03:** QUANDO a variável faltar, ENTÃO o sistema DEVE lançar `RuntimeError` citando o nome da variável.
 4. **CON-04:** QUANDO as URLs estiverem configuradas, ENTÃO as duas conexões DEVEM executar `SELECT 1` e receber `(1,)`, e só a pooled DEVE ter `-pooler` no host.
+5. **CON-05:** QUANDO as URLs estiverem só no arquivo `.env`, ENTÃO o sistema DEVE lê-las desse arquivo.
 
 ### P1: Executor de migrações
 
@@ -51,7 +53,7 @@ O RAG da Sprint 2 precisa guardar documentos e trechos no PostgreSQL do Neon. O 
 
 1. **MIG-01:** QUANDO houver migrações pendentes, ENTÃO o executor DEVE aplicar os arquivos `.sql` em ordem de nome, registrar cada nome em `migracoes_aplicadas` e devolver a lista dos aplicados nessa ordem.
 2. **MIG-02:** QUANDO for executado de novo sem novidades, ENTÃO DEVE devolver lista vazia, sem reaplicar nem duplicar registros.
-3. **MIG-03:** QUANDO uma migração falhar, ENTÃO suas mudanças DEVEM ser desfeitas, ela não DEVE ser registrada, as seguintes não DEVEM rodar, as anteriores DEVEM permanecer e o erro DEVE citar o nome do arquivo.
+3. **MIG-03:** QUANDO uma migração falhar, inclusive na execução do SQL, no registro ou na leitura do arquivo, ENTÃO suas mudanças DEVEM ser desfeitas, ela não DEVE ser registrada, as seguintes não DEVEM rodar, as anteriores DEVEM permanecer e o erro DEVE citar o nome do arquivo. Isso vale também para o comando de MIG-10.
 
 ### P1: Esquema
 
@@ -65,13 +67,14 @@ O RAG da Sprint 2 precisa guardar documentos e trechos no PostgreSQL do Neon. O 
 3. **MIG-06:** QUANDO um trecho citar documento inexistente, ENTÃO o banco DEVE rejeitar com violação de chave estrangeira.
 4. **MIG-07:** QUANDO um trecho repetir `documento_id` e `ordem`, ENTÃO o banco DEVE rejeitar com violação de unicidade.
 5. **MIG-08:** QUANDO um documento for apagado, ENTÃO seus trechos DEVEM ser apagados.
-6. **MIG-09:** QUANDO as migrações forem aplicadas, ENTÃO o pgvector DEVE estar habilitado e uma busca entre os vetores `[1,2,3]` e `[9,9,9]`, a partir de `[1,2,4]`, DEVE devolver o primeiro.
+6. **MIG-09:** QUANDO as migrações forem aplicadas, ENTÃO o pgvector DEVE estar habilitado e uma busca por distância de cosseno (`<=>`) entre os vetores `[1,2,3]` e `[9,9,9]`, a partir de `[1,2,4]`, DEVE devolver o primeiro.
+7. **MIG-11:** QUANDO as migrações forem aplicadas, ENTÃO os ids e `documento_id` DEVEM ser `bigint`, `ordem` DEVE ser `integer`, as datas DEVEM ser `timestamptz`, os demais campos DEVEM ser `text` e nenhuma coluna DEVE aceitar nulo.
 
 ### P1: Comando
 
 **Critérios:**
 
-1. **MIG-10:** QUANDO `python -m encomendas_os.migracoes` rodar, ENTÃO DEVE usar a conexão direta e imprimir o nome de cada migração aplicada, ou `Nenhuma migração pendente.`, sem imprimir a URL.
+1. **MIG-10:** QUANDO `python -m encomendas_os.migracoes` rodar, ENTÃO DEVE usar a conexão direta e imprimir o nome de cada migração aplicada, ou `Nenhuma migração pendente.`, sem imprimir a URL na saída padrão nem na de erro.
 
 ## Casos de borda
 
@@ -87,9 +90,9 @@ O RAG da Sprint 2 precisa guardar documentos e trechos no PostgreSQL do Neon. O 
 
 | Requisito | Tarefa | Status |
 |---|---|---|
-| CON-01 a CON-04 | T1 | Implementado |
-| MIG-01 a MIG-03 | T2 | Implementado |
-| MIG-04 a MIG-09 | T3 | Implementado |
-| MIG-10 | T4 | Implementado |
+| CON-01 a CON-05 | T1, F1 | Implementado |
+| MIG-01 a MIG-03 | T2, F1 | Implementado |
+| MIG-04 a MIG-09 e MIG-11 | T3, F1 | Implementado |
+| MIG-10 | T4, F1 | Implementado |
 
-**Cobertura:** 13 requisitos, 13 mapeados, nenhum sem tarefa.
+**Cobertura:** 16 requisitos, 16 mapeados, nenhum sem tarefa.

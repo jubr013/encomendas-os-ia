@@ -1,4 +1,5 @@
 import os
+import runpy
 from contextlib import contextmanager
 from types import SimpleNamespace
 from uuid import uuid4
@@ -59,21 +60,28 @@ def nomes_registrados(conexao):
 def test_comando_usa_conexao_direta_e_imprime_so_o_resultado(
     monkeypatch, capsys, aplicadas, saida
 ):
-    url_secreta = "postgresql://usuario:segredo@host/banco"
     pedidos = []
+    autocommit_ao_aplicar = []
 
     @contextmanager
     def conectar_falso(direta=False):
         pedidos.append(direta)
-        yield SimpleNamespace(autocommit=False, url=url_secreta)
+        yield SimpleNamespace(autocommit=False)
+
+    def aplicar_falso(conexao, pasta):
+        autocommit_ao_aplicar.append(conexao.autocommit)
+        return aplicadas
 
     monkeypatch.setattr(migracoes.banco, "conectar", conectar_falso)
-    monkeypatch.setattr(migracoes, "aplicar_migracoes", lambda conexao: aplicadas)
+    monkeypatch.setattr(migracoes, "aplicar_migracoes", aplicar_falso)
 
     migracoes.main()
 
     assert pedidos == [True]
-    assert capsys.readouterr().out == saida
+    assert autocommit_ao_aplicar == [True]
+    capturado = capsys.readouterr()
+    assert capturado.out == saida
+    assert capturado.err == ""
 
 
 def test_listar_migracoes_ordena_por_nome_e_ignora_o_que_nao_e_sql(tmp_path):
@@ -90,6 +98,7 @@ def test_listar_migracoes_ordena_por_nome_e_ignora_o_que_nao_e_sql(tmp_path):
 def test_aplica_em_ordem_e_registra_cada_migracao(conexao_isolada, tmp_path):
     (tmp_path / "0002_b.sql").write_text("CREATE TABLE b (a_id int REFERENCES a)", encoding="utf-8")
     (tmp_path / "0001_a.sql").write_text("CREATE TABLE a (id int PRIMARY KEY)", encoding="utf-8")
+    (tmp_path / "anotacoes.txt").write_text("CREATE TABLE ignorada (id int)", encoding="utf-8")
 
     aplicadas = migracoes.aplicar_migracoes(conexao_isolada, tmp_path)
 
@@ -136,26 +145,93 @@ def test_falha_desfaz_a_migracao_e_interrompe_as_seguintes(conexao_isolada, tmp_
     assert nomes_registrados(conexao_isolada) == ["0001_boa.sql"]
 
 
+@sem_banco
+def test_falha_ao_registrar_desfaz_a_migracao(conexao_isolada, tmp_path):
+    (tmp_path / "0001_ruim.sql").write_text(
+        "CREATE TABLE parcial (id int); DROP TABLE migracoes_aplicadas",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(RuntimeError, match="0001_ruim.sql"):
+        migracoes.aplicar_migracoes(conexao_isolada, tmp_path)
+
+    assert not tabela_existe(conexao_isolada, "parcial")
+    assert tabela_existe(conexao_isolada, "migracoes_aplicadas")
+
+
+@sem_banco
+def test_arquivo_ilegivel_cita_o_nome_e_interrompe(conexao_isolada, tmp_path):
+    (tmp_path / "0001_boa.sql").write_text("CREATE TABLE boa (id int)", encoding="utf-8")
+    (tmp_path / "0002_ilegivel.sql").write_bytes(b"\xff\xfe")
+    (tmp_path / "0003_depois.sql").write_text("CREATE TABLE depois (id int)", encoding="utf-8")
+
+    with pytest.raises(RuntimeError, match="0002_ilegivel.sql") as erro:
+        migracoes.aplicar_migracoes(conexao_isolada, tmp_path)
+
+    assert isinstance(erro.value.__cause__, UnicodeDecodeError)
+    assert not tabela_existe(conexao_isolada, "depois")
+    assert nomes_registrados(conexao_isolada) == ["0001_boa.sql"]
+
+
+@pytest.fixture
+def comando_isolado(conexao_isolada, monkeypatch):
+    """Faz o comando usar uma conexão real, como a de produção, no esquema temporário."""
+    conectar_real = banco.conectar
+    esquema_de_teste = conexao_isolada.execute("SELECT current_schema()").fetchone()[0]
+
+    @contextmanager
+    def conectar_no_esquema(direta=False):
+        with conectar_real(direta=True) as conexao:
+            conexao.execute(f"SET search_path TO {esquema_de_teste}")
+            conexao.commit()
+            yield conexao
+
+    monkeypatch.setattr(banco, "conectar", conectar_no_esquema)
+    return conexao_isolada
+
+
+@sem_banco
+def test_comando_preserva_as_anteriores_quando_uma_migracao_falha(comando_isolado, tmp_path):
+    (tmp_path / "0001_boa.sql").write_text("CREATE TABLE boa (id int)", encoding="utf-8")
+    (tmp_path / "0002_ruim.sql").write_text("SELECT coluna_inexistente FROM boa", encoding="utf-8")
+
+    with pytest.raises(RuntimeError, match="0002_ruim.sql"):
+        migracoes.main(tmp_path)
+
+    assert tabela_existe(comando_isolado, "boa")
+    assert nomes_registrados(comando_isolado) == ["0001_boa.sql"]
+
+
+@sem_banco
+def test_python_m_aplica_as_migracoes_do_projeto(comando_isolado, capsys):
+    runpy.run_module("encomendas_os.migracoes", run_name="__main__")
+
+    assert capsys.readouterr().out == (
+        "0001_habilitar_pgvector.sql\n0002_documentos_e_trechos.sql\n"
+    )
+    assert tabela_existe(comando_isolado, "documentos")
+
+
 @pytest.fixture
 def esquema(conexao_isolada):
     migracoes.aplicar_migracoes(conexao_isolada)
     return conexao_isolada
 
 
-def criar_documento(conexao, origem="cardapio.md", hash_="abc"):
+def criar_documento(conexao, origem="cardapio.md", hash_="abc", titulo="Título", conteudo="Texto"):
     return conexao.execute(
         """
         INSERT INTO documentos (origem, titulo, conteudo, hash)
-        VALUES (%s, 'Título', 'Conteúdo', %s) RETURNING id
+        VALUES (%s, %s, %s, %s) RETURNING id
         """,
-        (origem, hash_),
+        (origem, titulo, conteudo, hash_),
     ).fetchone()[0]
 
 
-def criar_trecho(conexao, documento_id, ordem=0):
+def criar_trecho(conexao, documento_id, ordem=0, conteudo="Trecho"):
     conexao.execute(
-        "INSERT INTO trechos (documento_id, ordem, conteudo) VALUES (%s, %s, 'Trecho')",
-        (documento_id, ordem),
+        "INSERT INTO trechos (documento_id, ordem, conteudo) VALUES (%s, %s, %s)",
+        (documento_id, ordem, conteudo),
     )
 
 
@@ -188,10 +264,38 @@ def test_esquema_tem_somente_as_tabelas_aprovadas(esquema):
 
 
 @sem_banco
+def test_colunas_tem_os_tipos_aprovados_e_sao_obrigatorias(esquema):
+    linhas = esquema.execute(
+        """
+        SELECT table_name, column_name, data_type, is_nullable
+        FROM information_schema.columns
+        WHERE table_schema = current_schema()
+        """
+    ).fetchall()
+    tipos = {(tabela, coluna): tipo for tabela, coluna, tipo, _ in linhas}
+
+    assert tipos == {
+        ("migracoes_aplicadas", "nome"): "text",
+        ("migracoes_aplicadas", "aplicada_em"): "timestamp with time zone",
+        ("documentos", "id"): "bigint",
+        ("documentos", "origem"): "text",
+        ("documentos", "titulo"): "text",
+        ("documentos", "conteudo"): "text",
+        ("documentos", "hash"): "text",
+        ("documentos", "criado_em"): "timestamp with time zone",
+        ("trechos", "id"): "bigint",
+        ("trechos", "documento_id"): "bigint",
+        ("trechos", "ordem"): "integer",
+        ("trechos", "conteudo"): "text",
+    }
+    assert {nulo for *_, nulo in linhas} == {"NO"}
+
+
+@sem_banco
 def test_documento_repetido_na_mesma_origem_e_rejeitado(esquema):
     criar_documento(esquema)
     with pytest.raises(psycopg.errors.UniqueViolation):
-        criar_documento(esquema)
+        criar_documento(esquema, titulo="Outro título", conteudo="Outro texto")
 
 
 @sem_banco
@@ -214,7 +318,18 @@ def test_trecho_com_ordem_repetida_no_documento_e_rejeitado(esquema):
     documento_id = criar_documento(esquema)
     criar_trecho(esquema, documento_id)
     with pytest.raises(psycopg.errors.UniqueViolation):
-        criar_trecho(esquema, documento_id)
+        criar_trecho(esquema, documento_id, conteudo="Outro trecho")
+
+
+@sem_banco
+def test_trecho_com_outra_ordem_ou_de_outro_documento_e_aceito(esquema):
+    documento_id = criar_documento(esquema)
+    outro_documento_id = criar_documento(esquema, "outra.md")
+    criar_trecho(esquema, documento_id)
+    criar_trecho(esquema, documento_id, ordem=1)
+    criar_trecho(esquema, outro_documento_id)
+
+    assert esquema.execute("SELECT count(*) FROM trechos").fetchone() == (3,)
 
 
 @sem_banco

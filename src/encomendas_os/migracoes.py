@@ -37,17 +37,18 @@ def aplicar_migracoes(conexao: psycopg.Connection, pasta: Path = PASTA_MIGRACOES
                 conexao.execute(
                     "INSERT INTO migracoes_aplicadas (nome) VALUES (%s)", (arquivo.name,)
                 )
-        except psycopg.Error as erro:
+        except (psycopg.Error, OSError, UnicodeDecodeError) as erro:
             raise RuntimeError(f"Falha na migração {arquivo.name}.") from erro
         aplicadas.append(arquivo.name)
     return aplicadas
 
 
-def main() -> None:
+def main(pasta: Path = PASTA_MIGRACOES) -> None:
     # Migrações mudam o esquema, então usam a conexão direta.
     with banco.conectar(direta=True) as conexao:
+        # Com autocommit, cada migração confirma sozinha e uma falha não desfaz as anteriores.
         conexao.autocommit = True
-        aplicadas = aplicar_migracoes(conexao)
+        aplicadas = aplicar_migracoes(conexao, pasta)
     for nome in aplicadas:
         print(nome)
     if not aplicadas:

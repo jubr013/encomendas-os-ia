@@ -70,3 +70,12 @@ T1 → T2 → T3 → T4
 - **Verificação:** build, mais execução real duas vezes
 - **Commit:** `feat: adiciona comando de migrações`
 - [x] Comando aplicado no banco real, e a segunda execução não aplica nada
+
+### F1: Correções da primeira verificação
+
+- **Onde:** `src/encomendas_os/migracoes.py`, `tests/test_banco.py`, `tests/test_migracoes.py`, `spec.md`
+- **Origem:** relatório do verificador, que reprovou a primeira rodada
+- **Testes:** unitário e integração
+- **Verificação:** build, mais nova rodada do verificador
+- **Commit:** `fix: corrige falhas de migração e fortalece testes`
+- [x] Isolamento, leitura de arquivo, autocommit e transação cobertos
