@@ -87,9 +87,9 @@ O RAG da Sprint 2 precisa guardar documentos e trechos no PostgreSQL do Neon. O 
 
 | Requisito | Tarefa | Status |
 |---|---|---|
-| CON-01 a CON-04 | T1 | Pendente |
-| MIG-01 a MIG-03 | T2 | Pendente |
-| MIG-04 a MIG-09 | T3 | Pendente |
-| MIG-10 | T4 | Pendente |
+| CON-01 a CON-04 | T1 | Implementado |
+| MIG-01 a MIG-03 | T2 | Implementado |
+| MIG-04 a MIG-09 | T3 | Implementado |
+| MIG-10 | T4 | Implementado |
 
 **Cobertura:** 13 requisitos, 13 mapeados, nenhum sem tarefa.

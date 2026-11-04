@@ -4,6 +4,8 @@ from pathlib import Path
 
 import psycopg
 
+from encomendas_os import banco
+
 PASTA_MIGRACOES = Path(__file__).parents[2] / "migrations"
 
 
@@ -39,3 +41,18 @@ def aplicar_migracoes(conexao: psycopg.Connection, pasta: Path = PASTA_MIGRACOES
             raise RuntimeError(f"Falha na migração {arquivo.name}.") from erro
         aplicadas.append(arquivo.name)
     return aplicadas
+
+
+def main() -> None:
+    # Migrações mudam o esquema, então usam a conexão direta.
+    with banco.conectar(direta=True) as conexao:
+        conexao.autocommit = True
+        aplicadas = aplicar_migracoes(conexao)
+    for nome in aplicadas:
+        print(nome)
+    if not aplicadas:
+        print("Nenhuma migração pendente.")
+
+
+if __name__ == "__main__":
+    main()

@@ -2,7 +2,7 @@
 
 **Spec:** `.specs/features/banco-e-migracoes/spec.md`
 **Design:** dispensado; o esquema foi aprovado e não há decisão de arquitetura em aberto.
-**Status:** em andamento
+**Status:** implementado, em verificação
 
 ## Matriz de cobertura
 
@@ -39,7 +39,7 @@ T1 → T2 → T3 → T4
 - **Testes:** unitário e integração
 - **Verificação:** build
 - **Commit:** `feat: adiciona conexão com o PostgreSQL`
-- [ ] Critérios CON cobertos e verificação passando
+- [x] Critérios CON cobertos e verificação passando
 
 ### T2: Executor de migrações
 
@@ -49,7 +49,7 @@ T1 → T2 → T3 → T4
 - **Testes:** unitário e integração
 - **Verificação:** build
 - **Commit:** `feat: adiciona executor de migrações`
-- [ ] Critérios cobertos e verificação passando
+- [x] Critérios cobertos e verificação passando
 
 ### T3: Migrações do esquema
 
@@ -59,7 +59,7 @@ T1 → T2 → T3 → T4
 - **Testes:** integração
 - **Verificação:** build
 - **Commit:** `feat: cria tabelas de documentos e trechos`
-- [ ] Critérios cobertos e verificação passando
+- [x] Critérios cobertos e verificação passando
 
 ### T4: Comando e aplicação no banco real
 
@@ -69,4 +69,4 @@ T1 → T2 → T3 → T4
 - **Testes:** integração
 - **Verificação:** build, mais execução real duas vezes
 - **Commit:** `feat: adiciona comando de migrações`
-- [ ] Comando aplicado no banco real, e a segunda execução não aplica nada
+- [x] Comando aplicado no banco real, e a segunda execução não aplica nada

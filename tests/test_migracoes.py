@@ -1,4 +1,6 @@
 import os
+from contextlib import contextmanager
+from types import SimpleNamespace
 from uuid import uuid4
 
 import psycopg
@@ -44,6 +46,33 @@ def nomes_registrados(conexao):
             "SELECT nome FROM migracoes_aplicadas ORDER BY nome"
         ).fetchall()
     ]
+
+
+@pytest.mark.parametrize(
+    ("aplicadas", "saida"),
+    [
+        (["0001_a.sql", "0002_b.sql"], "0001_a.sql\n0002_b.sql\n"),
+        ([], "Nenhuma migração pendente.\n"),
+    ],
+)
+def test_comando_usa_conexao_direta_e_imprime_so_o_resultado(
+    monkeypatch, capsys, aplicadas, saida
+):
+    url_secreta = "postgresql://usuario:segredo@host/banco"
+    pedidos = []
+
+    @contextmanager
+    def conectar_falso(direta=False):
+        pedidos.append(direta)
+        yield SimpleNamespace(autocommit=False, url=url_secreta)
+
+    monkeypatch.setattr(migracoes.banco, "conectar", conectar_falso)
+    monkeypatch.setattr(migracoes, "aplicar_migracoes", lambda conexao: aplicadas)
+
+    migracoes.main()
+
+    assert pedidos == [True]
+    assert capsys.readouterr().out == saida
 
 
 def test_listar_migracoes_ordena_por_nome_e_ignora_o_que_nao_e_sql(tmp_path):
