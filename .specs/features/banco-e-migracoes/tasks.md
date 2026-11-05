@@ -14,7 +14,7 @@ Orientações: `CLAUDE.md` e `pyproject.toml`.
 | Executor | Unitário e integração | Todos os critérios, em esquema temporário | `tests/test_migracoes.py` | `pytest` |
 | Esquema SQL | Integração | Todos os critérios, em esquema temporário | `tests/test_migracoes.py` | `pytest` |
 
-Os testes de integração são pulados quando não há URLs do banco, como no CI.
+Os testes de integração são pulados quando não há URLs do banco.
 
 ## Comandos de verificação
 
@@ -35,7 +35,7 @@ T1 → T2 → T3 → T4
 
 - **Onde:** `src/encomendas_os/banco.py`, `tests/test_banco.py`, `pyproject.toml`, `.env.example`
 - **Depende de:** nada
-- **Requisitos:** CON-01 a CON-04
+- **Requisitos:** CON-01 a CON-05
 - **Testes:** unitário e integração
 - **Verificação:** build
 - **Commit:** `feat: adiciona conexão com o PostgreSQL`
@@ -55,7 +55,7 @@ T1 → T2 → T3 → T4
 
 - **Onde:** `migrations/0001_habilitar_pgvector.sql`, `migrations/0002_documentos_e_trechos.sql`, `tests/test_migracoes.py`
 - **Depende de:** T2
-- **Requisitos:** MIG-04 a MIG-09
+- **Requisitos:** MIG-04 a MIG-09 e MIG-11
 - **Testes:** integração
 - **Verificação:** build
 - **Commit:** `feat: cria tabelas de documentos e trechos`
@@ -88,3 +88,12 @@ T1 → T2 → T3 → T4
 - **Verificação:** build, mais a mutação da migração 0001 em cópia temporária
 - **Commit:** `test: prova a migração do pgvector em banco vazio`
 - [x] O teste parte de um banco sem a extensão e o apaga ao final
+
+### F3: Lacunas menores da verificação
+
+- **Onde:** `tests/test_banco.py`, `tests/test_migracoes.py`, `spec.md`, `tasks.md`
+- **Origem:** planos de correção de `validation.md`, no card #16
+- **Testes:** unitário e integração
+- **Verificação:** build, mais as mutações O2, L3, B3, B4 e B7 em cópia temporária
+- **Commit:** `test: fecha as lacunas menores da verificação do banco`
+- [x] Isolamento na fixture, variável vazia, URL em erro, `.env` real, ordem e `OSError` cobertos

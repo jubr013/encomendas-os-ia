@@ -1,4 +1,7 @@
+import importlib.util
 import os
+import shutil
+from unittest.mock import patch
 from urllib.parse import urlparse
 
 import pytest
@@ -41,13 +44,31 @@ def test_obter_url_sem_variavel_cita_o_nome_que_falta(ambiente_vazio, direta, no
         banco.obter_url(direta=direta)
 
 
-def test_obter_url_le_o_arquivo_env(ambiente_vazio):
-    ambiente_vazio.setattr(
-        banco,
-        "load_dotenv",
-        lambda: ambiente_vazio.setenv("DATABASE_URL_POOLED", "postgresql://do-arquivo"),
+@pytest.mark.parametrize(
+    ("direta", "nome"), [(True, "DATABASE_URL"), (False, "DATABASE_URL_POOLED")]
+)
+def test_obter_url_com_variavel_vazia_cita_o_nome_que_falta(ambiente_vazio, direta, nome):
+    ambiente_vazio.setenv(nome, "")
+    with pytest.raises(RuntimeError, match=rf"Defina {nome} no"):
+        banco.obter_url(direta=direta)
+
+
+def test_obter_url_le_um_arquivo_env_real(ambiente_vazio, tmp_path):
+    (tmp_path / ".env").write_text(
+        "DATABASE_URL=postgresql://direta-do-arquivo\n"
+        "DATABASE_URL_POOLED=postgresql://pooled-do-arquivo\n",
+        encoding="utf-8",
     )
-    assert banco.obter_url() == "postgresql://do-arquivo"
+    # load_dotenv procura o .env a partir da pasta do módulo, por isso a cópia fica ao lado dele.
+    caminho = shutil.copy(banco.__file__, tmp_path / "banco_copia.py")
+    especificacao = importlib.util.spec_from_file_location("banco_copia", caminho)
+    copia = importlib.util.module_from_spec(especificacao)
+    especificacao.loader.exec_module(copia)
+
+    # load_dotenv grava em os.environ, então o ambiente é restaurado ao final.
+    with patch.dict(os.environ):
+        assert copia.obter_url() == "postgresql://pooled-do-arquivo"
+        assert copia.obter_url(direta=True) == "postgresql://direta-do-arquivo"
 
 
 @pytest.mark.parametrize(("direta", "url"), [(True, "url-direta"), (False, "url-pooled")])
