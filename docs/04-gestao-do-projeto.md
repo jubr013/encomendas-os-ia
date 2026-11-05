@@ -1,7 +1,7 @@
 # Encomendas OS: gestão do projeto
 
 **Data:** 04/11/2026
-**Status:** publicado no GitHub; os cards da Sprint 2 serão criados ao fim da Sprint 1
+**Status:** publicado no GitHub; Sprint 1 concluída e Sprint 2 em andamento
 
 ## 1. Ferramenta
 
@@ -22,31 +22,27 @@
 
 **Sprints:** duração sugerida de 2 semanas, já que não há prazo do curso. Ao final de cada uma, uma revisão curta: o que foi entregue, o que passa para a próxima e o que foi aprendido.
 
-## 3. Primeiros cards (rascunho)
+## 3. Sprints e cards
 
-### Sprint 1: fundação
+O andamento de cada card fica no [quadro do projeto](https://github.com/users/jubr013/projects/1).
 
-| Card | Pronto quando |
+| Sprint | Período | Situação |
+|---|---|---|
+| Sprint 1 | 04/11/2026 (um dia no quadro) | Concluída |
+| Sprint 2 | 05/11/2026 a 18/11/2026 | Em andamento |
+
+### Cards da Sprint 2
+
+| Card | Título |
 |---|---|
-| Criar repositório, README e `.gitignore` | `.env` ignorado; README explica o projeto e como rodar |
-| Criar Project, milestones e labels | Quadro acessível, com estes cards |
-| Configurar Python 3.12 e dependências | Instalação documentada funciona em ambiente limpo |
-| Configurar CI | Lint e testes rodam em cada PR |
-| Conectar ao Neon e habilitar pgvector | Migração cria as tabelas; teste de conexão passa |
-| Criar dados fictícios | Cardápio, preços, políticas e pedidos de uma confeitaria inventada |
-
-### Sprint 2: passos 1 e 2 do RAG
-
-| Card | Pronto quando |
-|---|---|
-| Criar interface de provedores com Gemini | Embeddings e texto funcionam atrás da interface; chave lida do `.env` |
-| Indexar os documentos | Documentos divididos, com embeddings gravados no pgvector |
-| Implementar busca por similaridade em CLI | Pergunta retorna os trechos mais próximos |
-| Criar conjunto de referência da busca | Perguntas com trechos corretos marcados |
-| Medir recall@k e MRR | Comando gera o relatório e os valores de referência são registrados |
-| Escrever a primeira anotação de aprendizado | `docs/aprendizados/` explica conceito, decisão e resultado |
-
-Os cards serão detalhados ao serem criados, com a skill `criar-item-de-trabalho`.
+| [#15](https://github.com/jubr013/encomendas-os-ia/issues/15) | Rodar os testes de banco no CI com Docker Compose |
+| [#16](https://github.com/jubr013/encomendas-os-ia/issues/16) | Fechar as lacunas menores da verificação do banco |
+| [#17](https://github.com/jubr013/encomendas-os-ia/issues/17) | Criar interface de provedores com Gemini |
+| [#18](https://github.com/jubr013/encomendas-os-ia/issues/18) | Indexar os documentos da confeitaria no pgvector |
+| [#19](https://github.com/jubr013/encomendas-os-ia/issues/19) | Buscar por similaridade em linha de comando |
+| [#20](https://github.com/jubr013/encomendas-os-ia/issues/20) | Criar conjunto de referência da busca |
+| [#21](https://github.com/jubr013/encomendas-os-ia/issues/21) | Medir recall@k e MRR da busca |
+| [#22](https://github.com/jubr013/encomendas-os-ia/issues/22) | Atualizar documentos com a direção e a Sprint 2 |
 
 ## 4. O que fica fora do repositório
 
