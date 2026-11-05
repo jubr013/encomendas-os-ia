@@ -1,0 +1,22 @@
+# Banco de testes usado pelo CI. A senha é fictícia e o banco só existe durante a execução.
+services:
+  banco:
+    image: pgvector/pgvector:pg18
+    environment:
+      POSTGRES_USER: encomendas
+      POSTGRES_PASSWORD: senha_ficticia
+      POSTGRES_DB: encomendas
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      # A partir do Postgres 18, o volume da imagem fica neste caminho, não em .../data.
+      - dados:/var/lib/postgresql
+    healthcheck:
+      # Com -h, a conferência usa TCP: o servidor temporário da inicialização só aceita socket.
+      test: ["CMD", "pg_isready", "-h", "localhost", "-U", "encomendas", "-d", "encomendas"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  dados:

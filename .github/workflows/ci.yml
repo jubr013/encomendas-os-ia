@@ -11,6 +11,10 @@ permissions:
 jobs:
   verificar:
     runs-on: ubuntu-latest
+    env:
+      # Apontam para o banco do docker-compose.yml, com a senha fictícia de lá.
+      DATABASE_URL: postgresql://encomendas:senha_ficticia@127.0.0.1:5432/encomendas
+      DATABASE_URL_POOLED: postgresql://encomendas:senha_ficticia@127.0.0.1:5432/encomendas
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -20,5 +24,13 @@ jobs:
         run: python -m pip install -e ".[dev]"
       - name: Lint
         run: ruff check .
+      - name: Subir o banco
+        run: docker compose up --detach --wait --wait-timeout 90
+      - name: Aplicar as migrações
+        run: python -m encomendas_os.migracoes
       - name: Testes
-        run: pytest
+        # -rs lista no log cada teste pulado, com o motivo.
+        run: pytest -rs
+      - name: Mostrar os logs do banco
+        if: failure()
+        run: docker compose logs banco

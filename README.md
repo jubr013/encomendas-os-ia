@@ -46,7 +46,7 @@ pytest
 ruff check .
 ```
 
-Os testes de banco são pulados quando as URLs não estão configuradas, como no CI.
+Os testes de banco são pulados quando as URLs não estão configuradas. No CI, eles rodam em um PostgreSQL com pgvector, criado pelo `docker-compose.yml`.
 
 Para usar o banco, copie `.env.example` para `.env`, preencha as URLs do Neon e aplique as migrações:
 

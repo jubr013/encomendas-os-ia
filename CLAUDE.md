@@ -22,13 +22,13 @@ Cada passo do RAG começa sem framework e só avança quando a avaliação mostr
 
 - Python 3.12 ou superior. Os comandos locais são para PowerShell, no Windows.
 - O ambiente virtual fica em `$env:USERPROFILE\.venvs\encomendas-os-ia`, fora do OneDrive.
-- Sem Docker, WSL ou banco na máquina. O banco fica no Neon, com as URLs no `.env`: `DATABASE_URL` é a direta, para mudar o esquema, e `DATABASE_URL_POOLED` é para o uso normal. O plano é validar o Docker Compose no GitHub Actions, o que ainda não está configurado.
+- Sem Docker, WSL ou banco na máquina. O banco fica no Neon, com as URLs no `.env`: `DATABASE_URL` é a direta, para mudar o esquema, e `DATABASE_URL_POOLED` é para o uso normal. O Docker Compose só roda no GitHub Actions, onde sobe o banco dos testes.
 - Mudança de esquema entra como arquivo em `migrations/` e é aplicada com `python -m encomendas_os.migracoes`.
 - Preferir serviços gratuitos e não sobrecarregar a memória da máquina.
 
 ## Verificação
 
-Rodar antes de propor commit. O CI executa os mesmos comandos em cada PR e em cada push na `main`, em Linux:
+Rodar antes de propor commit. O CI executa os mesmos comandos em cada PR e em cada push na `main`, em Linux, depois de subir o banco e aplicar as migrações:
 
 ```powershell
 ruff check .

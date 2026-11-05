@@ -14,7 +14,7 @@ from encomendas_os import banco, migracoes
 load_dotenv()
 sem_banco = pytest.mark.skipif(
     not os.environ.get("DATABASE_URL"),
-    reason="Requer as URLs do banco no .env; não roda no CI.",
+    reason="Requer as URLs do banco no .env.",
 )
 
 
