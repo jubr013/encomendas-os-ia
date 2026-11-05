@@ -9,6 +9,7 @@ docs/01-analise-de-mercado-e-comparativo.md
 # Skills da Neon: só a usada no projeto é versionada
 .claude/skills/*
 !.claude/skills/neon-postgres/
+.agents/
 
 # Python
 __pycache__/
