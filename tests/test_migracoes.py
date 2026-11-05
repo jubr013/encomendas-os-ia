@@ -1,6 +1,9 @@
 import os
 import runpy
+import subprocess
+import sys
 from contextlib import contextmanager
+from pathlib import Path
 from types import SimpleNamespace
 from uuid import uuid4
 
@@ -18,6 +21,12 @@ sem_banco = pytest.mark.skipif(
 )
 
 
+def conferir_isolamento(conexao, esquema):
+    """Interrompe o teste antes de qualquer consulta se ele puder alcançar as tabelas reais."""
+    assert "-pooler" not in conexao.info.host
+    assert conexao.execute("SHOW search_path").fetchone()[0] == esquema
+
+
 @pytest.fixture
 def conexao_isolada():
     """Conexão em um esquema temporário, para os testes não tocarem nas tabelas reais."""
@@ -25,10 +34,13 @@ def conexao_isolada():
     with banco.conectar(direta=True) as conexao:
         conexao.autocommit = True
         conexao.execute(f"CREATE SCHEMA {esquema}")
-        # Sem public no caminho: nenhuma consulta do teste alcança as tabelas reais.
-        conexao.execute(f"SET search_path TO {esquema}")
-        yield conexao
-        conexao.execute(f"DROP SCHEMA {esquema} CASCADE")
+        try:
+            # Sem public no caminho: nenhuma consulta do teste alcança as tabelas reais.
+            conexao.execute(f"SET search_path TO {esquema}")
+            conferir_isolamento(conexao, esquema)
+            yield conexao
+        finally:
+            conexao.execute(f"DROP SCHEMA {esquema} CASCADE")
 
 
 def tabela_existe(conexao, nome):
@@ -93,6 +105,59 @@ def test_listar_migracoes_ordena_por_nome_e_ignora_o_que_nao_e_sql(tmp_path):
     nomes = [arquivo.name for arquivo in migracoes.listar_migracoes(tmp_path)]
 
     assert nomes == ["0001_a.sql", "0002_b.sql"]
+
+
+def test_listar_migracoes_ordena_o_que_o_sistema_de_arquivos_devolve_fora_de_ordem():
+    pasta = SimpleNamespace(glob=lambda padrao: [Path("0002_b.sql"), Path("0001_a.sql")])
+
+    nomes = [arquivo.name for arquivo in migracoes.listar_migracoes(pasta)]
+
+    assert nomes == ["0001_a.sql", "0002_b.sql"]
+
+
+def conexao_falsa(host, caminho):
+    resultado = SimpleNamespace(fetchone=lambda: (caminho,))
+    return SimpleNamespace(info=SimpleNamespace(host=host), execute=lambda consulta: resultado)
+
+
+def test_conferir_isolamento_aceita_so_o_esquema_temporario_na_conexao_direta():
+    conferir_isolamento(conexao_falsa("banco.exemplo", "teste_a"), "teste_a")
+
+
+@pytest.mark.parametrize(
+    ("host", "caminho"),
+    [
+        ("banco-pooler.exemplo", "teste_a"),
+        ("banco.exemplo", "teste_a, public"),
+        ("banco.exemplo", "public"),
+    ],
+)
+def test_conferir_isolamento_recusa_o_que_alcanca_as_tabelas_reais(host, caminho):
+    with pytest.raises(AssertionError):
+        conferir_isolamento(conexao_falsa(host, caminho), "teste_a")
+
+
+def test_comando_nao_imprime_a_url_quando_a_conexao_falha():
+    # A porta 1 não aceita a conexão, sem sair da máquina, e a variável definida vence o .env.
+    # O limite de tempo é necessário porque, no Windows, o psycopg só desiste ao atingi-lo.
+    senha = "senha-ficticia"
+    url = f"postgresql://usuario:{senha}@127.0.0.1:1/banco?connect_timeout=2"
+
+    resultado = subprocess.run(
+        [sys.executable, "-m", "encomendas_os.migracoes"],
+        env={**os.environ, "DATABASE_URL": url},
+        capture_output=True,
+        text=True,
+        errors="replace",
+        timeout=60,
+    )
+
+    assert resultado.returncode != 0
+    # A linha da exceção, sem recuo, prova que o comando parou na conexão, e não por outro motivo.
+    assert any(linha.startswith("psycopg.") for linha in resultado.stderr.splitlines())
+    saida = resultado.stdout + resultado.stderr
+    assert url not in saida
+    assert senha not in saida
 
 
 @sem_banco
@@ -170,6 +235,20 @@ def test_arquivo_ilegivel_cita_o_nome_e_interrompe(conexao_isolada, tmp_path):
         migracoes.aplicar_migracoes(conexao_isolada, tmp_path)
 
     assert isinstance(erro.value.__cause__, UnicodeDecodeError)
+    assert not tabela_existe(conexao_isolada, "depois")
+    assert nomes_registrados(conexao_isolada) == ["0001_boa.sql"]
+
+
+@sem_banco
+def test_pasta_com_nome_de_migracao_cita_o_nome_e_interrompe(conexao_isolada, tmp_path):
+    (tmp_path / "0001_boa.sql").write_text("CREATE TABLE boa (id int)", encoding="utf-8")
+    (tmp_path / "0002_pasta.sql").mkdir()
+    (tmp_path / "0003_depois.sql").write_text("CREATE TABLE depois (id int)", encoding="utf-8")
+
+    with pytest.raises(RuntimeError, match="0002_pasta.sql") as erro:
+        migracoes.aplicar_migracoes(conexao_isolada, tmp_path)
+
+    assert isinstance(erro.value.__cause__, OSError)
     assert not tabela_existe(conexao_isolada, "depois")
     assert nomes_registrados(conexao_isolada) == ["0001_boa.sql"]
 

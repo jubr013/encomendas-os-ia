@@ -43,7 +43,7 @@ O RAG da Sprint 2 precisa guardar documentos e trechos no PostgreSQL do Neon. O 
 
 1. **CON-01:** QUANDO a conexão direta for pedida, ENTÃO o sistema DEVE usar `DATABASE_URL`.
 2. **CON-02:** QUANDO a conexão normal for pedida, ENTÃO o sistema DEVE usar `DATABASE_URL_POOLED`.
-3. **CON-03:** QUANDO a variável faltar, ENTÃO o sistema DEVE lançar `RuntimeError` citando o nome da variável.
+3. **CON-03:** QUANDO a variável faltar ou estiver vazia, ENTÃO o sistema DEVE lançar `RuntimeError` citando o nome da variável.
 4. **CON-04:** QUANDO as URLs estiverem configuradas, ENTÃO as duas conexões DEVEM executar `SELECT 1` e receber `(1,)`, e só a pooled DEVE ter `-pooler` no host.
 5. **CON-05:** QUANDO as URLs estiverem só no arquivo `.env`, ENTÃO o sistema DEVE lê-las desse arquivo.
 
