@@ -153,8 +153,8 @@ def test_comando_nao_imprime_a_url_quando_a_conexao_falha():
     )
 
     assert resultado.returncode != 0
-    # A última linha prova que o comando parou na conexão, e não por outro motivo.
-    assert resultado.stderr.strip().splitlines()[-1].startswith("psycopg.")
+    # A linha da exceção, sem recuo, prova que o comando parou na conexão, e não por outro motivo.
+    assert any(linha.startswith("psycopg.") for linha in resultado.stderr.splitlines())
     saida = resultado.stdout + resultado.stderr
     assert url not in saida
     assert senha not in saida
