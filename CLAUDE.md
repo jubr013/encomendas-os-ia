@@ -44,6 +44,7 @@ Dependência entra em `pyproject.toml` só quando o código precisar dela.
 - **Commit e título do PR:** `<tipo>: <descrição em português>`, como `ci: roda lint e testes no GitHub Actions`. Tipos já usados: `feat`, `docs`, `ci`, `test`.
 - **Corpo do PR:** seções `## O que muda` e `## Como foi verificado`, com o que não foi verificado dito de forma explícita, e `Closes #N` no fim.
 - Push, abertura de PR, merge e mudanças em issues continuam dependendo de confirmação.
+- Exceção: mover cards entre colunas do quadro não precisa de confirmação.
 
 ## Quadro
 
