@@ -2,7 +2,7 @@
 
 **Data:** 04/11/2026
 **Fonte:** `Unipds.pdf`, "Ementa Engenharia de Software em IA Aplicada" (19 páginas)
-**Status:** proposta; stack definida por Julia em 04/11/2026; as decisões da seção 5 seguem abertas
+**Status:** em execução; Sprint 1 concluída e Sprint 2 iniciada em 05/11/2026
 
 ## 1. Como a ementa se aplica
 
@@ -10,7 +10,7 @@ O projeto segue o **Módulo 11, Projeto Integrador (Capstone)**, que pede um Mic
 
 **Vínculo:** estudo guiado por conta própria, definido por Julia em 04/11/2026. Não há avaliação nem prazo do curso; a ementa é roteiro, não exigência, e desvios não precisam de aprovação.
 
-**Hipótese de trabalho:** Organização com IA para confeitaria sob encomenda. A análise de mercado que levou a essa hipótese é mantida fora do repositório, e a escolha ainda não foi confirmada.
+**Direção:** Organização com IA para confeitaria sob encomenda é o núcleo deste portfólio, por decisão de Julia em 05/11/2026, e isso não valida um produto comercial.
 
 ## 2. Roteiro pelas entregas do Capstone
 
@@ -85,7 +85,7 @@ Valem como estudo, sem forçar uso no MVP:
 | Banco | PostgreSQL | Postgres no primeiro RAG; banco vetorial no Capstone | Avaliar pgvector para manter um único banco |
 | Implantação | Docker Compose | CI/CD e implantação | Manter os dois |
 | Avaliação | Conjuntos de referência, regressões e avaliação independente | Métricas de agentes e de fine-tuning, sem suíte dedicada | Manter o briefing; é um diferencial do portfólio |
-| Ordem | Validar antes de desenvolver | Construir para entregar o Capstone | **Decisão 3** |
+| Ordem | Validar antes de desenvolver | Construir para entregar o Capstone | **Definido:** projeto de portfólio; a venda só avança após um teste de compra real |
 
 ## 4. Ambiente
 
@@ -102,7 +102,7 @@ O projeto fica em pasta do OneDrive. Ao usar Docker, os dados do banco devem fic
 
 ## 5. Decisões pendentes
 
-1. **Publicação e quadro:** ver [gestão do projeto](04-gestao-do-projeto.md).
+Nenhuma decisão pendente neste plano; o andamento fica na [gestão do projeto](04-gestao-do-projeto.md).
 
 **Definido em 04/11/2026, relação com o negócio:** o projeto é portfólio, com dados fictícios. A venda só avança após um teste de compra real, e o desenvolvimento não conta como validação comercial.
 
