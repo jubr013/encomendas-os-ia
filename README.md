@@ -2,7 +2,7 @@
 
 Projeto de portfólio de AI Engineering: transformar conversas de WhatsApp de pequenos negócios que vendem por encomenda em pedidos e orçamentos estruturados, sempre com confirmação humana.
 
-> **Status:** em construção. Por enquanto há apenas o ambiente Python e testes básicos. Todos os dados do projeto são fictícios.
+> **Status:** em construção. Por enquanto há o ambiente Python, os dados fictícios, a conexão com o banco e as migrações. Todos os dados do projeto são fictícios.
 
 ## Objetivos de aprendizado
 
@@ -44,4 +44,12 @@ Para verificar:
 ```powershell
 pytest
 ruff check .
+```
+
+Os testes de banco são pulados quando as URLs não estão configuradas, como no CI.
+
+Para usar o banco, copie `.env.example` para `.env`, preencha as URLs do Neon e aplique as migrações:
+
+```powershell
+python -m encomendas_os.migracoes
 ```

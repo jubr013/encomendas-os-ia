@@ -8,7 +8,10 @@ version = "0.1.0"
 description = "Conversas de WhatsApp viram pedidos estruturados, com RAG, MCP e avaliações."
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "psycopg[binary]>=3.2",
+    "python-dotenv>=1.0",
+]
 
 [project.optional-dependencies]
 dev = [

@@ -22,7 +22,8 @@ Cada passo do RAG começa sem framework e só avança quando a avaliação mostr
 
 - Python 3.12 ou superior. Os comandos locais são para PowerShell, no Windows.
 - O ambiente virtual fica em `$env:USERPROFILE\.venvs\encomendas-os-ia`, fora do OneDrive.
-- Sem Docker, WSL ou banco na máquina. O plano é usar o Neon como banco e validar o Docker Compose no GitHub Actions; nenhum dos dois está configurado ainda.
+- Sem Docker, WSL ou banco na máquina. O banco fica no Neon, com as URLs no `.env`: `DATABASE_URL` é a direta, para mudar o esquema, e `DATABASE_URL_POOLED` é para o uso normal. O plano é validar o Docker Compose no GitHub Actions, o que ainda não está configurado.
+- Mudança de esquema entra como arquivo em `migrations/` e é aplicada com `python -m encomendas_os.migracoes`.
 - Preferir serviços gratuitos e não sobrecarregar a memória da máquina.
 
 ## Verificação
