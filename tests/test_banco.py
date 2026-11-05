@@ -70,4 +70,4 @@ def test_so_a_url_pooled_aponta_para_o_pooler():
 @pytest.mark.parametrize("direta", [True, False])
 def test_conexao_responde(direta):
     with banco.conectar(direta=direta) as conexao:
-        assert conexao.execute("SELECT 1").fetchone() == (1,)
+        assert conexao.execute("SELECT 1").fetchone() == (2,)
