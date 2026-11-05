@@ -9,7 +9,11 @@ from encomendas_os import banco
 load_dotenv()
 sem_banco = pytest.mark.skipif(
     not (os.environ.get("DATABASE_URL") and os.environ.get("DATABASE_URL_POOLED")),
-    reason="Requer as URLs do banco no .env; não roda no CI.",
+    reason="Requer as URLs do banco no .env.",
+)
+so_no_neon = pytest.mark.skipif(
+    os.environ.get("CI") == "true",
+    reason="O CI usa um PostgreSQL no Docker Compose, sem o pooler do Neon.",
 )
 
 
@@ -56,6 +60,7 @@ def test_conectar_usa_a_url_pedida(ambiente_vazio, direta, url):
 
 
 @sem_banco
+@so_no_neon
 def test_so_a_url_pooled_aponta_para_o_pooler():
     assert "-pooler" in urlparse(banco.obter_url()).hostname
     assert "-pooler" not in urlparse(banco.obter_url(direta=True)).hostname
